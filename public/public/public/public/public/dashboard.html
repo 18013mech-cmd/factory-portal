@@ -1,0 +1,83 @@
+<h2>Part Entry</h2>
+
+<input id="part" placeholder="Part No"><br>
+<input id="wo" placeholder="Work Order"><br>
+<input id="machine" placeholder="Machine No"><br>
+
+<select id="group" onchange="loadSetter()">
+  <option>A</option>
+  <option>B</option>
+</select>
+
+<select id="setter"></select><br><br>
+
+<input id="checker" placeholder="Checked By"><br><br>
+
+<button onclick="save()">Save</button>
+
+<h3>Records</h3>
+<div id="list"></div>
+
+<script>
+const setters = {
+  A:["Ravi","Kumar"],
+  B:["Suresh","Mani"]
+};
+
+function loadSetter(){
+  setter.innerHTML="";
+  setters[group.value].forEach(s=>{
+    let o=document.createElement("option");
+    o.text=s;
+    setter.add(o);
+  });
+}
+loadSetter();
+
+async function save(){
+  await fetch("/add",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({
+      part:part.value,
+      work:wo.value,
+      machine:machine.value,
+      group:group.value,
+      setter:setter.value
+    })
+  });
+  load();
+}
+
+async function update(id,status){
+  await fetch("/status",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({
+      id,
+      status,
+      checkedBy:checker.value
+    })
+  });
+  load();
+}
+
+async function load(){
+  const res = await fetch("/parts");
+  const data = await res.json();
+
+  list.innerHTML = data.map(d=>`
+    <div>
+      ${d.part} | ${d.group} | ${d.setter} |
+      ${d.inTime} → ${d.outTime || "-"} |
+      ${d.status || "Pending"}
+      <br>
+      <button onclick="update('${d.id}','OK')">OK</button>
+      <button onclick="update('${d.id}','Rework')">Rework</button>
+      <button onclick="update('${d.id}','Reject')">Reject</button>
+    </div>
+  `).join("");
+}
+
+load();
+</script>
